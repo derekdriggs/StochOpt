@@ -93,7 +93,7 @@ if exist(para.name) ~= 2
 
     para.c_gamma = 1/5;
 
-    [x, its, ek, fk, sk, gk] = func_B_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
 
     fprintf('\n');
        
@@ -134,7 +134,7 @@ for i = 1:length(theta_list)
         while mult <= 100
 
             para.c_gamma              = 1/mult;
-            [x, its, ek, fk, sk, gk] = func_B_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
+            [x, its, ek, fk, sk, gk] = func_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
 
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
