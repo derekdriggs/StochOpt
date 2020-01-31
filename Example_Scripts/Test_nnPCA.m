@@ -140,7 +140,7 @@ for i = 1:length(theta_list)
     para.name       = [filename '/saga_nnPCA_' filename '_theta_' num2str(para.theta) '_obj.mat'];
     
     if exist(para.name) ~= 2
-        [x, its, ek, fk, mean_fk, sk, gk] = func_B_SAGA_noncon_Lin(para, iGradFOpt, ObjF, ProxJ);
+        [x, its, ek, fk, mean_fk, sk, gk] = func_SAGA_Lin_noncon(para, iGradFOpt, ObjF, ProxJ);
     else
         para_old = para;
         load(para.name)

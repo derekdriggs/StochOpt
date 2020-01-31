@@ -1,6 +1,6 @@
-%%% TODO: affine gradient
+%%% TODO: combine with other SAGA functions
 
-function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, ProxJ)
+function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SAGA_Lin_noncon(para, iGradF_Lin, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -44,6 +44,8 @@ function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, Pr
 %                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
+%     window     - because of nonconvexity, function values are averaged
+%                   over an epoch (m).
 
 % set linear gradient values
 if isfield(para,'W')
@@ -65,10 +67,11 @@ objEvery   = setOpts(para,'objEvery',100);
 theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
+window     = setOpts(para,'window',m);
 
 % running print
 fprintf(sprintf('performing SAGA...\n'));
-itsprint(sprintf('      step %09d: Objective = %.9e \n', 1,0), 1); 
+itsprint(sprintf('      step %09d: printObjective = %.9e \n', 1,0), 1); 
 
 gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
@@ -96,12 +99,14 @@ gk = zeros(floor(maxits/objEvery), 1);
 fk = zeros(floor(maxits/objEvery), 1);
 tk = zeros(floor(maxits/objEvery), 1);
 
+mean_fk = zeros(floor(maxits/objEvery), 1);
+
 % initialise x
-x     = x0;
-
-l = 0;
-
+x   = x0;
+l   = 0;
 its = 1;
+
+mean_fk_old  = 0;
 
 tic
 while(its<maxits)
@@ -131,23 +136,26 @@ while(its<maxits)
         gk(l) = gamma;
         tk(l) = toc;
         
+        mean_fk(l) = mean(fk(max(1,l-window):l));
+        
         if mod(its,printEvery) == 0
             if printObj == 1
-                itsprint(sprintf('      step %09d: Objective = %.9e\n', its, fk(l)), its); 
+                itsprint(sprintf('      step %09d: Mean objective = %.9e\n', its, mean_fk(l)), its); 
             else
-                itsprint(sprintf('      step %09d: norm(ek) = %.3e', its,ek(l)), its);
+                itsprint(sprintf('      step %09d: norm(ek) = %.3e', its, ek(l)), its);
             end
         end
         
         %%% Stop?
-        if ((ek(l))<tol)||(ek(l)>1e10); break; end
+        if abs(mean_fk(l) - mean_fk_old) < tol || abs(mean_fk(l) - mean_fk_old) > 1e10; break; end
+        mean_fk_old = mean_fk(l);
     end
  
     
     % Save
     if mod(its,saveEvery) == 0
         fprintf('\n Saving... \n')
-        save(para.name,'gk','sk','ek','fk','x','tk','para')
+        save(para.name,'gk','sk','ek','fk','mean_fk','x','tk','para')
         itsprint(sprintf('      step %09d: Objective = %.9e \n', its,fk(l)), 1); 
     end
     
@@ -163,8 +171,10 @@ sk = sk(1:l);
 gk = gk(1:l);
 tk = tk(1:l);
 
+mean_fk = mean_fk(1:l);
 
-% save(para.name,'gk','sk','ek','fk','x','tk','para')
+
+% save(para.name,'gk','sk','ek','fk','mean_fk','x','para')
 
 end
 

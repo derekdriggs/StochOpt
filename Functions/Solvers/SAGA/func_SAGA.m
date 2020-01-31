@@ -1,23 +1,18 @@
 %%% TODO: affine gradient
 
-function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, ProxJ)
+function [x, its, ek, fk, sk, tk, gk] = func_SAGA(para, iGradF, ObjF, ProxJ)
 %
 % Solves the problem
 %
-%    min_x   1/m sum_{i=1}^m f_i(x) + mu * J(x)
+%    min_x   1/n sum_{i=1}^n f_i(x) + mu * J(x)
 %
-% where f_i has a linear gradient for all i. Because the gradient is
-% linear, it can be stored as a contant depending on x and a matrix
-% that is independent of x. This reduces the size of SAGA's gradient
-% table, making the algorithm much more efficient in complexity and
-% storage.
+% where f_i has a Lipschitz continuous gradient for all i.
 %
 % Inputs:
-%   para       - struct of parameters
-%   iGradF_Lin - function handle mapping (x,i) to a scalar c_i such that
-%                c_i * W(i,:)' is the gradient of f_i at x.
-%   ObjF       - function handle returning the objective value
-%   ProxJ      - function handle returning the proximal operator of the
+%   para   - struct of parameters
+%   iGradF - function handle mapping (x,i) the gradient of f_i at x
+%   ObjF   - function handle returning the objective value at x
+%   ProxJ  - function handle returning the proximal operator of the
 %                non-smooth term
 %
 % Outputs:
@@ -30,8 +25,9 @@ function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, Pr
 %   gk  - step-size
 %
 % Parameters:
-%     W          - matrix defining linear gradients (must provide);
-%     mu         - non-negative tuning parameter ( m^(-1/2) );
+%     m          - number of functions in smooth component;
+%     n          - length of vector x;
+%     mu         - non-negative tuning parameter ( n^(-1/2) );
 %     c_gamma    - step-size times Lipschitz constant of f_i (0.1);
 %     beta_fi    - inverse of Lipschitz constant of f_i (1);
 %     maxits     - maximum number of iterations (1000);
@@ -45,23 +41,23 @@ function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, Pr
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
 
-% set linear gradient values
-if isfield(para,'W')
-    W = para.W;
+% set problem dimensions
+if isfield(para,'m') && isfield(para,'n')
+    m = para.m;
+    n = para.n;
 else
-    error('Must provide W: linear gradient values. If gradients are not linear, use func_SAGA.')
+    error('Must provide problem dimensions para.m and para.n')
 end
 
 % set parameters
-[m,n]   = size(W);
-mu      = setOpts(para,'mu',1/sqrt(m));
+mu      = setOpts(para,'mu',1/sqrt(n));
 c_gamma = setOpts(para,'c_gamma',0.1);
 beta_fi = setOpts(para,'beta_fi',1);
 maxits  = setOpts(para,'maxits',1000);
 printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
-objEvery   = setOpts(para,'objEvery',100);
+objEvery  = setOpts(para,'objEvery',100);
 theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
@@ -72,7 +68,6 @@ itsprint(sprintf('      step %09d: Objective = %.9e \n', 1,0), 1);
 
 gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
-para  = rmfield(para,'W'); % for better storage in save files
 
 % initial point
 if isfield(para,'x0')
@@ -83,7 +78,7 @@ end
 
 G = zeros(1, m);
 for i=1:m
-    G(:, i) = iGradF_Lin(x0, i);
+    G(:, i) = iGradF(x0, i);
 end
 
 % mean of the stored gradient values
@@ -97,10 +92,8 @@ fk = zeros(floor(maxits/objEvery), 1);
 tk = zeros(floor(maxits/objEvery), 1);
 
 % initialise x
-x     = x0;
-
-l = 0;
-
+x   = x0;
+l   = 0;
 its = 1;
 
 tic
@@ -110,11 +103,9 @@ while(its<maxits)
     
     j = randperm(m, b);
     
-    gj_old = W(j,:)' * G(:, j)';
-    gj     = iGradF_Lin(x_old, j);
+    gj_old = G(:, j)';
+    gj     = iGradF(x_old, j);
     G(:,j) = gj;
-    
-    gj = W(j,:)' * gj;
     
     w = x - ( gamma / (b * theta) ) * (gj - gj_old) - gamma * mean_grad;
     
