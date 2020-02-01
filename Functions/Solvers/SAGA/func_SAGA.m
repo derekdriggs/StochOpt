@@ -1,5 +1,3 @@
-%%% TODO: affine gradient
-
 function [x, its, ek, fk, sk, tk, gk] = func_SAGA(para, iGradF, ObjF, ProxJ)
 %
 % Solves the problem
@@ -40,6 +38,8 @@ function [x, its, ek, fk, sk, tk, gk] = func_SAGA(para, iGradF, ObjF, ProxJ)
 %                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
+%     x0         - starting point (vector with entries drawn i.i.d. from
+%                  the standard normal distribution)
 
 % set problem dimensions
 if isfield(para,'m') && isfield(para,'n')
@@ -50,7 +50,7 @@ else
 end
 
 % set parameters
-mu      = setOpts(para,'mu',1/sqrt(n));
+mu      = setOpts(para,'mu',1/sqrt(m));
 c_gamma = setOpts(para,'c_gamma',0.1);
 beta_fi = setOpts(para,'beta_fi',1);
 maxits  = setOpts(para,'maxits',1000);
@@ -61,6 +61,10 @@ objEvery  = setOpts(para,'objEvery',100);
 theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
+x0         = setOpts(para,'x0',randn(n,1));
+
+% regulate batch size
+b          = min([b m]);
 
 % running print
 fprintf(sprintf('performing SAGA...\n'));
@@ -69,20 +73,17 @@ itsprint(sprintf('      step %09d: Objective = %.9e \n', 1,0), 1);
 gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
 
-% initial point
-if isfield(para,'x0')
-    x0 = para.x0;
-else
-    x0 = zeros(n, 1);
-end
-
-G = zeros(1, m);
+G = zeros(n,m);
 for i=1:m
     G(:, i) = iGradF(x0, i);
 end
 
 % mean of the stored gradient values
-mean_grad = 1/m * W' * G';
+mean_grad = mean(G,2);
+
+% initialise gradient tables
+gj_old = zeros(n,b);
+gj     = zeros(n,b);
 
 % initialise iterate histories
 ek = zeros(floor(maxits/objEvery), 1);
@@ -103,15 +104,17 @@ while(its<maxits)
     
     j = randperm(m, b);
     
-    gj_old = G(:, j)';
-    gj     = iGradF(x_old, j);
-    G(:,j) = gj;
+    for batch_num = 1:length(j)
+        gj_old(:,batch_num) = G(:, j(batch_num));
+        gj(:,batch_num)     = iGradF(x_old, j(batch_num));
+        G(:,j(batch_num))   = gj(:,batch_num);
+    end
     
-    w = x - ( gamma / (b * theta) ) * (gj - gj_old) - gamma * mean_grad;
+    w = x - ( gamma / theta ) * mean(gj - gj_old,2) - gamma * mean_grad;
     
     x = ProxJ(w, tau);
     
-    mean_grad = mean_grad - 1/m*gj_old + 1/m*gj;
+    mean_grad = mean_grad + 1/m * sum(gj - gj_old,2);
     
     %%% Compute info
     if mod(its,objEvery)==0

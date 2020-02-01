@@ -44,6 +44,8 @@ function [x, its, ek, fk, sk, tk, gk] = func_SAGA_Lin(para, iGradF_Lin, ObjF, Pr
 %                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
+%     x0         - starting point (vector with entries drawn i.i.d. from
+%                  the standard normal distribution)
 
 % set linear gradient values
 if isfield(para,'W')
@@ -65,6 +67,10 @@ objEvery   = setOpts(para,'objEvery',100);
 theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
+x0         = setOpts(para,'x0',zeros(n,1));
+
+% regulate batch size
+b          = min([b m]);
 
 % running print
 fprintf(sprintf('performing SAGA...\n'));
@@ -74,13 +80,6 @@ gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
 para  = rmfield(para,'W'); % for better storage in save files
 
-% initial point
-if isfield(para,'x0')
-    x0 = para.x0;
-else
-    x0 = zeros(n, 1);
-end
-
 G = zeros(1, m);
 for i=1:m
     G(:, i) = iGradF_Lin(x0, i);
@@ -88,6 +87,10 @@ end
 
 % mean of the stored gradient values
 mean_grad = 1/m * W' * G';
+
+% initialise gradient tables
+gj_old = zeros(n,b);
+gj     = zeros(n,b);
 
 % initialise iterate histories
 ek = zeros(floor(maxits/objEvery), 1);
@@ -97,10 +100,8 @@ fk = zeros(floor(maxits/objEvery), 1);
 tk = zeros(floor(maxits/objEvery), 1);
 
 % initialise x
-x     = x0;
-
-l = 0;
-
+x   = x0;
+l   = 0;
 its = 1;
 
 tic
@@ -110,17 +111,17 @@ while(its<maxits)
     
     j = randperm(m, b);
     
-    gj_old = W(j,:)' * G(:, j)';
-    gj     = iGradF_Lin(x_old, j);
-    G(:,j) = gj;
+    for batch_num = 1:length(j)
+        gj_old(:,batch_num) = W(j(batch_num),:)' * G(:, j(batch_num))';
+        gj(:,batch_num)     = W(j(batch_num),:)' * iGradF_Lin(x_old, j(batch_num));
+        G(:,j(batch_num))   = iGradF_Lin(x_old, j(batch_num));
+    end
     
-    gj = W(j,:)' * gj;
-    
-    w = x - ( gamma / (b * theta) ) * (gj - gj_old) - gamma * mean_grad;
+    w = x - ( gamma / theta ) * mean(gj - gj_old,2) - gamma * mean_grad;
     
     x = ProxJ(w, tau);
     
-    mean_grad = mean_grad - 1/m*gj_old + 1/m*gj;
+    mean_grad = mean_grad + 1/m * sum(gj - gj_old,2);
     
     %%% Compute info
     if mod(its,objEvery)==0
