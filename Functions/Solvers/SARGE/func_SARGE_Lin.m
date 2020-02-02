@@ -1,4 +1,4 @@
-function [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradF_Lin, ObjF, ProxJ)
+function [x, its, ek, fk, sk, tk, gk] = func_SARGE_Lin(para, iGradF_Lin, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -6,7 +6,7 @@ function [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradF_Lin, ObjF, ProxJ
 %
 % where f_i has a linear gradient for all i. Because the gradient is
 % linear, it can be stored as a contant depending on x and a matrix
-% that is independent of x. This reduces the size of SAGA's gradient
+% that is independent of x. This reduces the size of SARGE's gradient
 % table, making the algorithm much more efficient in complexity and
 % storage.
 %
@@ -62,7 +62,6 @@ printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
 objEvery   = setOpts(para,'objEvery',100);
-theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
 x0         = setOpts(para,'x0',zeros(n,1));
