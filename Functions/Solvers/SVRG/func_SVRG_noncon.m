@@ -1,4 +1,4 @@
-function [x, t, ek, fk, sk, gk] = func_SVRG(para, GradF ,iGradF, ObjF, ProxJ)
+function [x, t, ek, fk, mean_fk, sk, gk] = func_SVRG_noncon(para, GradF ,iGradF, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -40,6 +40,8 @@ function [x, t, ek, fk, sk, gk] = func_SVRG(para, GradF ,iGradF, ObjF, ProxJ)
 %                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
+%     window     - because of nonconvexity, function values are averaged
+%                   over an epoch (m).
 
 % set problem dimensions
 if isfield(para,'m') && isfield(para,'n')
@@ -63,6 +65,7 @@ theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
 x0         = setOpts(para,'x0',randn(n,1));
+window     = setOpts(para,'window',m);
 
 % regulate batch size
 b          = min([b m]);
@@ -77,6 +80,9 @@ gk = zeros(floor(maxits/objEvery), 1);
 fk = zeros(floor(maxits/objEvery), 1);
 tk = zeros(floor(maxits/objEvery), 1);
 
+mean_fk     = zeros(floor(maxits/objEvery), 1);
+mean_fk_old = 0;
+
 % initialise iterates
 x       = x0;
 x_tilde = x;
@@ -88,7 +94,6 @@ Gj_k2 = zeros(n,b);
 
 its  = 1;
 t    = 1;
-Conv = 0; % break if converged (Conv = 1)
 
 % running print
 fprintf(sprintf('performing SVRG...\n'));
@@ -101,6 +106,7 @@ while(its<=floor(maxits/P))
     
     % fprintf('computing new mu')
     mu = GradF(x_tilde);
+    
     
     for p=1:P
         
@@ -117,41 +123,39 @@ while(its<=floor(maxits/P))
         x = ProxJ(w, tau);
         
         %%% Compute info
-        if mod(t,objEvery)==0
+        if mod(p + m*its,objEvery)==0
             l = l+1;
             fk(l) = ObjF(x);
             ek(l) = norm(x(:)-x_old(:), 'fro');
             sk(l) = sum(abs(x) > 0);
             gk(l) = gamma;
             tk(l) = toc;
-            
-            if mod(t,printEvery) == 0
+
+            mean_fk(l) = mean(fk(max(1,l-window):l));
+
+            if mod(p,printEvery) == 0
                 if printObj == 1
-                    itsprint(sprintf('      step %09d: Objective = %.9e\n', t, fk(l)), t); 
+                    itsprint(sprintf('      step %09d: Mean objective = %.9e\n', p + m*its, mean_fk(l)), p + m*its); 
                 else
-                    itsprint(sprintf('      step %09d: norm(ek) = %.3e', t,ek(l)), t);
+                    itsprint(sprintf('      step %09d: norm(ek) = %.3e', p + m*its, ek(l)), p + m*its);
                 end
             end
 
             %%% Stop?
-            if ((ek(l))<tol)||(ek(l)>1e10); fprintf('Breaking due to change in iterate value \n'); Conv = 1; break; end
-
+            if abs(mean_fk(l) - mean_fk_old) < tol || abs(mean_fk(l) - mean_fk_old) > 1e10; break; end
+            mean_fk_old = mean_fk(l);
         end
-        
+ 
         
         % Save
         if mod(t,saveEvery) == 0
             fprintf('\n Saving... \n')
-            save(para.name,'gk','sk','ek','fk','x','tk','para')
+            save(para.name,'gk','sk','ek','fk','mean_fk','x','para')
             itsprint(sprintf('      step %09d: Objective = %.9e \n', t,fk(l)), 1); 
         end
         
         t = t+1;
         
-    end
-    
-    if Conv
-            break
     end
         
     x_tilde = x;
@@ -162,13 +166,18 @@ while(its<=floor(maxits/P))
 end
 
 fk = fk(1:l);
+mean_fk = mean_fk(1:l);
 ek = ek(1:l);
 sk = sk(1:l);
 gk = gk(1:l);
 
-% save(para.name,'gk','sk','ek','fk','x','tk','para')
+save(para.name,'gk','sk','ek','fk','mean_fk','x','para')
 
 end
+
+
+
+
 
 
 
@@ -180,3 +189,4 @@ function out = setOpts(options, opt, default)
         out = default;
     end
 end % function: setOpts
+
