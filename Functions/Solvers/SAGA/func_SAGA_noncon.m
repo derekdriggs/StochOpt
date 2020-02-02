@@ -1,6 +1,6 @@
 %%% TODO: combine with other SAGA functions
 
-function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SAGA_noncon(para, iGradF_Lin, ObjF, ProxJ)
+function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SAGA_noncon(para, iGradF, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -9,21 +9,21 @@ function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SAGA_noncon(para, iGradF_L
 % where f_i has a Lipschitz continuous gradient for all i.
 %
 % Inputs:
-%   para       - struct of parameters
-%   iGradF_Lin - function handle mapping (x,i) to a scalar c_i such that
-%                c_i * W(i,:)' is the gradient of f_i at x.
-%   ObjF       - function handle returning the objective value
-%   ProxJ      - function handle returning the proximal operator of the
+%   para   - struct of parameters
+%   iGradF - function handle mapping (x,i) to the gradient of f_i.
+%   ObjF   - function handle returning the objective value
+%   ProxJ  - function handle returning the proximal operator of the
 %                non-smooth term
 %
 % Outputs:
-%   x   - minimiser
-%   its - number of iterations
-%   ek  - distance between iterations ||x_k - x_{k-1}||_2
-%   fk  - objective value
-%   sk  - number of non-zero entries of x (size of support)
-%   tk  - time
-%   gk  - step-size
+%   x       - minimiser
+%   its     - number of iterations
+%   ek      - distance between iterations ||x_k - x_{k-1}||_2
+%   fk      - objective value
+%   mean_fk - objective value averaged over one epoch
+%   sk      - number of non-zero entries of x (size of support)
+%   tk      - time
+%   gk      - step-size
 %
 % Parameters:
 %     m          - number of functions in smooth component;
@@ -41,6 +41,8 @@ function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SAGA_noncon(para, iGradF_L
 %                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
+%     x0         - starting point (vector with entries drawn i.i.d. from
+%                  the standard normal distribution);
 %     window     - because of nonconvexity, function values are averaged
 %                   over an epoch (m).
 
@@ -64,6 +66,7 @@ objEvery   = setOpts(para,'objEvery',100);
 theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
+x0         = setOpts(para,'x0',zeros(n,1));
 window     = setOpts(para,'window',m);
 
 % running print
@@ -72,18 +75,10 @@ itsprint(sprintf('      step %09d: printObjective = %.9e \n', 1,0), 1);
 
 gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
-para  = rmfield(para,'W'); % for better storage in save files
 
-% initial point
-if isfield(para,'x0')
-    x0 = para.x0;
-else
-    x0 = zeros(n, 1);
-end
-
-G = zeros(1, m);
+G = zeros(n, m);
 for i=1:m
-    G(:, i) = iGradF_Lin(x0, i);
+    G(:, i) = iGradF(x0, i);
 end
 
 % mean of the stored gradient values
@@ -112,15 +107,17 @@ while(its<maxits)
     
     j = randperm(m, b);
     
-    gj_old = G(:, j)';
-    gj     = iGradF_Lin(x_old, j);
-    G(:,j) = gj;
+    for batch_num = 1:length(j)
+        gj_old(:,batch_num) = G(:, j(batch_num));
+        gj(:,batch_num)     = iGradF(x_old, j(batch_num));
+        G(:,j(batch_num))   = gj(:,batch_num);
+    end
     
-    w = x - ( gamma / (b * theta) ) * (gj - gj_old) - gamma * mean_grad;
+    w = x - ( gamma / theta ) * mean(gj - gj_old,2) - gamma * mean_grad;
     
     x = ProxJ(w, tau);
     
-    mean_grad = mean_grad - 1/m*gj_old + 1/m*gj;
+    mean_grad = mean_grad + 1/m * sum(gj - gj_old,2);
     
     %%% Compute info
     if mod(its,objEvery)==0

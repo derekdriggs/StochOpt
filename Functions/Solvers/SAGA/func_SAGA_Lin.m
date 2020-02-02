@@ -88,7 +88,7 @@ end
 % mean of the stored gradient values
 mean_grad = 1/m * W' * G';
 
-% initialise gradient tables
+% initialise gradient batches
 gj_old = zeros(n,b);
 gj     = zeros(n,b);
 
