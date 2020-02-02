@@ -376,7 +376,7 @@ if exist(para.name) ~= 2
 while mult <= 100
     para.c_gamma = 1/mult;
 
-    [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradFOpt, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradF, ObjF, ProxJ);
 
     if its_old > 0
         if its <= its_old
