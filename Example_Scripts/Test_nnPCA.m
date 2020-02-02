@@ -266,7 +266,7 @@ para.maxits = 5e2*m; % max # of iteration
 para.name       = [filename '/sarge_nnPCA_' filename '_obj.mat'];
 
 if exist(para.name) ~= 2
-    [x, its, ek, fk, mean_fk, sk, gk] = func_SARGE_noncon(para, iGradFOpt, ObjF, ProxJ);
+    [x, its, ek, fk, mean_fk, sk, gk] = func_SARGE_Lin_noncon(para, iGradFOpt, ObjF, ProxJ);
 else
     para_old = para;
     load(para.name)
