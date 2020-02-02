@@ -20,8 +20,8 @@ filename = strF{i_file};
 
 mkdir(filename);
 
-load(['../data/data/', class_name]);
-load(['../data/data/', feature_name]);
+load(['../data/', class_name]);
+load(['../data/', feature_name]);
 
 h = full(h);
 
@@ -61,7 +61,7 @@ para.maxits = 4e3*m; % max # of iteration
 
 GradF = @(x) grad_lasso(x, para.W, para.y)/m;
 iGradF = @(x, i) igrad_lasso(x, i, para.W, para.y);
-iGradFOpt = @(x, i) igrad_lasso_SAGA(x,i,W,y);
+iGradFOpt = @(x, i) igrad_lasso_SAGA_Lin(x,i,W,y);
 
 ProxJ = @(x, t) sign(x).*max(abs(x) - t,0);
 
@@ -111,7 +111,7 @@ high_p = load(para.name);
 
 
 
-%% B-SAGA
+%% SAGA
 
 theta_list = [1 10];
 
@@ -188,7 +188,7 @@ fprintf('\n');
 
 
 
-%% B-SVRG
+%% SVRG
 
 epoch_svrg = 2*m;
 para.P     = epoch_svrg;
@@ -376,7 +376,7 @@ if exist(para.name) ~= 2
 while mult <= 100
     para.c_gamma = 1/mult;
 
-    [x, its, ek, fk, sk, gk] = func_SARGE(para, iGradFOpt, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradFOpt, ObjF, ProxJ);
 
     if its_old > 0
         if its <= its_old
