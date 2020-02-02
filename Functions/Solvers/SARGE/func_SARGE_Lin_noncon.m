@@ -1,17 +1,22 @@
-function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARGE_noncon(para, iGradF, ObjF, ProxJ)
+function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARGE_Lin_noncon(para, iGradF_Lin, ObjF, ProxJ)
 %
 % Solves the problem
 %
 %    min_x   1/m sum_{i=1}^m f_i(x) + mu * J(x)
 %
-% where f_i has a Lipshcitz continuous gradient for all i.
+% where f_i has a linear gradient for all i. Because the gradient is
+% linear, it can be stored as a contant depending on x and a matrix
+% that is independent of x. This reduces the size of SAGA's gradient
+% table, making the algorithm much more efficient in complexity and
+% storage.
 %
 % Inputs:
-%   para   - struct of parameters
-%   iGradF - function handle mapping x to the gradient of f_i.
-%   ObjF   - function handle returning the objective value
-%   ProxJ  - function handle returning the proximal operator of the
-%            non-smooth term
+%   para       - struct of parameters
+%   iGradF_Lin - function handle mapping x to the gradient of 1/m sum_{i=1}^m f_i(x)
+%                c_i * W(i,:)' is the gradient of f_i at x.
+%   ObjF       - function handle returning the objective value
+%   ProxJ      - function handle returning the proximal operator of the
+%                non-smooth term
 %
 % Outputs:
 %   x       - minimiser
@@ -78,7 +83,7 @@ para  = rmfield(para,'W'); % for better storage in save files
 
 G = zeros(n, m);
 for i=1:m
-    G(:, i) = 1/m * iGradF(x0, i);
+    G(:, i) = 1/m * iGradF_Lin(x0, i);
 end
 
 mean_grad = mean(G,2);
@@ -110,8 +115,8 @@ while(its<maxits)
     
     for batch_num = 1:length(j)
         gj_old(:,batch_num) = G(:, j(batch_num));
-        gj(:,batch_num)     = iGradF(x, j(batch_num)) - (1-b/m)*iGradF(x_old, j(batch_num));
-        G(:,j(batch_num))   = iGradF(x, j(batch_num)) - (1-b/m)*iGradF(x_old, j(batch_num));
+        gj(:,batch_num)     = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
+        G(:,j(batch_num))   = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
     end
     
     g = mean(gj - gj_old,2) + mean_grad + (1 - b/m) * g_old;

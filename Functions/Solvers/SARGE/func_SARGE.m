@@ -1,4 +1,4 @@
-function [x, its, ek, fk, sk, tk, gk] = func_SARGE(para, iGradF_Lin, ObjF, ProxJ)
+function [x, its, ek, fk, sk, tk, gk] = func_SARGE(para, iGradF, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -7,12 +7,11 @@ function [x, its, ek, fk, sk, tk, gk] = func_SARGE(para, iGradF_Lin, ObjF, ProxJ
 % where f_i has a Lipshcitz continuous gradient for all i.
 %
 % Inputs:
-%   para       - struct of parameters
-%   iGradF_Lin - function handle mapping (x,i) to a scalar c_i such that
-%                c_i * W(i,:)' is the gradient of f_i at x.
-%   ObjF       - function handle returning the objective value
-%   ProxJ      - function handle returning the proximal operator of the
-%                non-smooth term
+%   para   - struct of parameters
+%   iGradF - function handle mapping (x,i) to the gradient of f_i.
+%   ObjF   - function handle returning the objective value
+%   ProxJ  - function handle returning the proximal operator of the
+%            non-smooth term
 %
 % Outputs:
 %   x   - minimiser
@@ -74,7 +73,7 @@ para  = rmfield(para,'W'); % for better storage in save files
 
 G = zeros(n, m);
 for i=1:m
-    G(:, i) = 1/m * iGradF_Lin(x0, i);
+    G(:, i) = 1/m * iGradF(x0, i);
 end
 
 mean_grad = mean(G,2);
@@ -104,8 +103,8 @@ while(its<maxits)
     
     for batch_num = 1:length(j)
         gj_old(:,batch_num) = G(:, j(batch_num));
-        gj(:,batch_num)     = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
-        G(:,j(batch_num))   = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
+        gj(:,batch_num)     = iGradF(x, j(batch_num)) - (1-b/m)*iGradF(x_old, j(batch_num));
+        G(:,j(batch_num))   = iGradF(x, j(batch_num)) - (1-b/m)*iGradF(x_old, j(batch_num));
     end
     
     g = mean(gj - gj_old,2) + mean_grad + (1 - b/m) * g_old;
