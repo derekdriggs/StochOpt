@@ -92,10 +92,10 @@ if exist(para.name) ~= 2
     % para.x0 = randn(n,1); % always start from non-zero point
     % para.x0 = ProxJ(para.x0,1); % project onto constraint set
 
-    [x_best, its_best, ek_best, fk_best, sk_best, gk_best] = func_B_SVRG(para, GradF, iGradF, ObjF, ProxJ);
+    [x_best, its_best, ek_best, fk_best, sk_best, gk_best] = func_SVRG(para, GradF, iGradF, ObjF, ProxJ);
     save(para.name,'gk_best','sk_best','ek_best','fk_best','x_best','para')
 
-    [x_temp, its_temp, ek_temp, fk_temp, sk_temp, gk_temp] = func_B_SVRG(para, GradF, iGradF, ObjF, ProxJ);
+    [x_temp, its_temp, ek_temp, fk_temp, sk_temp, gk_temp] = func_SVRG(para, GradF, iGradF, ObjF, ProxJ);
 
     fprintf('\n');
 
@@ -119,7 +119,7 @@ high_p = load(para.name);
 
 
 
-%% B-SAGA
+%% SAGA
 
 para.tol = 1e-14;
 
@@ -163,7 +163,7 @@ fprintf('\n');
 
 
 
-%% B-SVRG
+%% SVRG
 
 para.tol = 1e-14;
 
@@ -186,7 +186,7 @@ for i = 1:length(theta_list)
     para.name       = [filename '/svrg_nnPCA_' filename '_theta_' num2str(para.theta) '_obj.mat'];
     
     if exist(para.name) ~= 2
-        [x, its, ek, fk, mean_fk, sk, gk] = func_B_SVRG_noncon(para, GradF, iGradF, ObjF, ProxJ);
+        [x, its, ek, fk, mean_fk, sk, gk] = func_SVRG_noncon(para, GradF, iGradF, ObjF, ProxJ);
     else
         para_old = para;
         load(para.name)

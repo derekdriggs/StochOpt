@@ -217,7 +217,7 @@ for i = 1:length(theta_list)
         while mult <= 100
             
             para.c_gamma              = 1/mult;
-            [x, its, ek, fk, sk, gk] = func_B_SVRG(para, GradF, iGradF, ObjF, ProxJ);
+            [x, its, ek, fk, sk, gk] = func_SVRG(para, GradF, iGradF, ObjF, ProxJ);
 
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
