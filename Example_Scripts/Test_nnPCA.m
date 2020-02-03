@@ -215,7 +215,7 @@ para.tol = 1e-14;
 
 para.Obj      = 1;
 
-para.P        = 2*m;
+para.q        = 1/(2*m);
 
 para.objEvery   = m;
 para.saveEvery  = 1e3*m;
@@ -227,7 +227,7 @@ para.maxits = 5e2*m; % max # of iteration
 para.name       = [filename '/sarah_nnPCA_' filename '_obj.mat'];
 
 if exist(para.name) ~= 2
-    [x, its, ek, fk, mean_fk, sk, gk] = func_SARAH_noncon(para, GradF, iGradF, ObjF, ProxJ);
+    [x, its, ek, fk, mean_fk, sk, gk] = func_rSARAH_noncon(para, GradF, iGradF, ObjF, ProxJ);
 else
     para_old = para;
     load(para.name)

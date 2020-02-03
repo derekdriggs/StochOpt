@@ -29,6 +29,7 @@ function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARGE_Lin_noncon(para, iGr
 %   gk      - step-size
 %
 % Parameters:
+%     W          - matrix defining linear gradients (must provide);
 %     mu         - non-negative tuning parameter ( m^(-1/2) );
 %     c_gamma    - step-size times Lipschitz constant of f_i (0.1);
 %     beta_fi    - inverse of Lipschitz constant of f_i (1);
@@ -48,15 +49,15 @@ function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARGE_Lin_noncon(para, iGr
 %                   over an epoch (m).
 
 
-% set problem dimensions
-if isfield(para,'m') && isfield(para,'n')
-    m = para.m;
-    n = para.n;
+% set linear gradient values
+if isfield(para,'W')
+    W = para.W;
 else
-    error('Must provide problem dimensions para.m and para.n')
+    error('Must provide W: linear gradient values. If gradients are not linear, use func_SARGE.')
 end
 
 % set parameters
+[m,n]   = size(W);
 mu      = setOpts(para,'mu',1/sqrt(m));
 c_gamma = setOpts(para,'c_gamma',0.1);
 beta_fi = setOpts(para,'beta_fi',1);
@@ -74,19 +75,19 @@ window     = setOpts(para,'window',m);
 b          = min([b m]);
 
 % running print
-fprintf(sprintf('performing SARGE...\n'));
+fprintf(sprintf('performing SARGE...\n\n'));
 itsprint(sprintf('      step %09d: Objective = %.9e \n', 1,0), 1); 
 
 gamma = c_gamma * beta_fi; % step size
 tau   = mu * gamma; % prox step-size
 para  = rmfield(para,'W'); % for better storage in save files
 
-G = zeros(n, m);
+G = zeros(1, m);
 for i=1:m
     G(:, i) = 1/m * iGradF_Lin(x0, i);
 end
 
-mean_grad = mean(G,2);
+mean_grad = 1/m * W' * G';
 g_old     = b/m * mean_grad;
 
 % initialise gradient tables
@@ -108,14 +109,16 @@ x_old = x;
 l     = 0;
 its   = 1;
 
+mean_fk_old  = 0;
+
 tic
 while(its<maxits)
     
     j = randperm(m, b);
     
     for batch_num = 1:length(j)
-        gj_old(:,batch_num) = G(:, j(batch_num));
-        gj(:,batch_num)     = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
+        gj_old(:,batch_num) = W(j(batch_num),:)' * G(:, j(batch_num))';
+        gj(:,batch_num)     = W(j(batch_num),:)' * (iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num)))';
         G(:,j(batch_num))   = iGradF_Lin(x, j(batch_num)) - (1-b/m)*iGradF_Lin(x_old, j(batch_num));
     end
     

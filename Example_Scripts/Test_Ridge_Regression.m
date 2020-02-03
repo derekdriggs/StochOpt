@@ -111,7 +111,7 @@ high_p = load(para.name);
 
 
 
-%% B-SAGA
+%% SAGA
 
 theta_list = [1 10];
 
@@ -181,12 +181,7 @@ fprintf('\n');
 
 
 
-
-
-
-
-
-%% B-SVRG
+%% SVRG
 
 epoch_svrg = 2*m;
 para.P     = epoch_svrg;
@@ -272,13 +267,11 @@ para.q     = 1/epoch_sarah;
 
 
 para.Obj      = 1;
-para.tol      = 1e-15;
+para.tol      = 1e-14;
 
 para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
-
-para.tol = 1e-17;
 
 mult         = 5;
 its_old      = -1;
@@ -291,7 +284,7 @@ if exist(para.name) ~= 2
 while mult <= 100
     
     para.c_gamma = 1/mult;
-    [x, its, ek, fk, sk, gk] = func_random_epoch_SARAH(para, GradF, iGradF, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_rSARAH(para, GradF, iGradF, ObjF, ProxJ);
 
     if its_old > 0
         if its <= its_old

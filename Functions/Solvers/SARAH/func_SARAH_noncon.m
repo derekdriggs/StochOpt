@@ -1,4 +1,4 @@
-function [x, t, ek, fk, mean_fk, sk, gk] = func_SVRG_noncon(para, GradF ,iGradF, ObjF, ProxJ)
+function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARAH_noncon(para, GradF ,iGradF, ObjF, ProxJ)
 %
 % Solves the problem
 %
@@ -15,14 +15,14 @@ function [x, t, ek, fk, mean_fk, sk, gk] = func_SVRG_noncon(para, GradF ,iGradF,
 %                non-smooth term
 %
 % Outputs:
-%   x       - minimiser
-%   its     - number of iterations
-%   ek      - distance between iterations ||x_k - x_{k-1}||_2
-%   fk      - objective value
+%   x   - minimiser
+%   its - number of iterations
+%   ek  - distance between iterations ||x_k - x_{k-1}||_2
+%   fk  - objective value
 %   mean_fk - objective value averaged over one epoch
-%   sk      - number of non-zero entries of x (size of support)
-%   tk      - time
-%   gk      - step-size
+%   sk  - number of non-zero entries of x (size of support)
+%   tk  - time
+%   gk  - step-size
 %
 % Parameters:
 %     m          - number of functions in smooth component;
@@ -36,9 +36,6 @@ function [x, t, ek, fk, mean_fk, sk, gk] = func_SVRG_noncon(para, GradF ,iGradF,
 %     saveEvery  - number of iterations between saves (100);
 %     objEvery   - number of iterations between objective prints (100);
 %     printObj   - print objective values? (True);
-%     theta      - bias parameter, larger values give more weight
-%                  to stored gradients, with a value of 1 corresponding
-%                  to the SAGA gradient estimator (1);
 %     b          - batch size (1);
 %     tol        - tolerance in distance between iterates (1e-4)
 %     window     - because of nonconvexity, function values are averaged
@@ -62,7 +59,6 @@ printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
 objEvery  = setOpts(para,'objEvery',100);
-theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
 x0         = setOpts(para,'x0',randn(n,1));
@@ -86,18 +82,20 @@ mean_fk_old = 0;
 
 % initialise iterates
 x       = x0;
-x_tilde = x;
 l       = 0;
 
 % initialise gradient batches
 Gj_k1 = zeros(n,b);
 Gj_k2 = zeros(n,b);
 
+% first full gradient
+g_old = GradF(x);
+
 its  = 1;
 t    = 1;
 
 % running print
-fprintf(sprintf('performing SVRG...\n'));
+fprintf(sprintf('performing SARAH...\n'));
 fprintf('Running for %d epoch(s) with %d steps per epoch...\n',floor(maxits/P),P)
 
 itsprint(sprintf('      step %09d: Objective = %.9e', 1,0), 1);
@@ -105,38 +103,43 @@ itsprint(sprintf('      step %09d: Objective = %.9e', 1,0), 1);
 tic
 while(its<=floor(maxits/P))
     
-    % fprintf('computing new mu')
-    mu = GradF(x_tilde);
-    
-    
+    % fprintf('computing full gradient')
+    g = GradF(x);
+        
     for p=1:P
         
-        x_old = x;
-        
-        j = randperm(m,b);
-        
-        for batch_num = 1:length(j)
-            Gj_k1(:,batch_num) = iGradF(x, j(batch_num));
-            Gj_k2(:,batch_num) = iGradF(x_tilde, j(batch_num));
-        end
+        if p >=2
+            j = randperm(m,b);
 
-        w = x - gamma / theta * mean(Gj_k1 - Gj_k2, 2) - gamma * mu;
+            for batch_num = 1:length(j)
+                Gj_k1(:,batch_num) = iGradF(x, j(batch_num));
+                Gj_k2(:,batch_num) = iGradF(x_old, j(batch_num));
+            end
+        
+            g = mean( Gj_k1 - Gj_k2, 2 ) + g_old;
+        end
+            
+        w = x - gamma * g;
+        
+        x_old = x;
+        g_old = g;
+        
         x = ProxJ(w, tau);
         
         %%% Compute info
-        if mod(p + m*its,objEvery)==0
+        if mod(t,objEvery)==0
             l = l+1;
             fk(l) = ObjF(x);
             ek(l) = norm(x(:)-x_old(:), 'fro');
             sk(l) = sum(abs(x) > 0);
             gk(l) = gamma;
             tk(l) = toc;
-
+            
             mean_fk(l) = mean(fk(max(1,l-window):l));
 
             if mod(p,printEvery) == 0
                 if printObj == 1
-                    itsprint(sprintf('      step %09d: Mean objective = %.9e\n', p + m*its, mean_fk(l)), p + m*its); 
+                    itsprint(sprintf('      step %09d: Mean obj = %.9e\n', p + m*its, mean_fk(l)), p + m*its); 
                 else
                     itsprint(sprintf('      step %09d: norm(ek) = %.3e', p + m*its, ek(l)), p + m*its);
                 end
@@ -145,38 +148,34 @@ while(its<=floor(maxits/P))
             %%% Stop?
             if abs(mean_fk(l) - mean_fk_old) < tol || abs(mean_fk(l) - mean_fk_old) > 1e10; break; end
             mean_fk_old = mean_fk(l);
+            
         end
- 
+        
         
         % Save
         if mod(t,saveEvery) == 0
             fprintf('\n Saving... \n')
-            save(para.name,'gk','sk','ek','fk','mean_fk','x','para')
+            save(para.name,'gk','sk','ek','fk','mean_fk','x','tk','para')
             itsprint(sprintf('      step %09d: Objective = %.9e \n', t,fk(l)), 1); 
         end
         
         t = t+1;
         
     end
-        
-    x_tilde = x;
-    
     
     its = its + 1;
-        
 end
 
 fk = fk(1:l);
-mean_fk = mean_fk(1:l);
+mean_fk = (1:l);
 ek = ek(1:l);
 sk = sk(1:l);
 gk = gk(1:l);
+tk = tk(1:l);
 
-save(para.name,'gk','sk','ek','fk','mean_fk','x','para')
+% save(para.name,'gk','sk','ek','fk','mean_fk','tk','x','para')
 
 end
-
-
 
 
 
@@ -190,4 +189,3 @@ function out = setOpts(options, opt, default)
         out = default;
     end
 end % function: setOpts
-
