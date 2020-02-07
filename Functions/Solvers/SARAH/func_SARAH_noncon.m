@@ -1,6 +1,6 @@
 function [x, its, ek, fk, mean_fk, sk, tk, gk] = func_SARAH_noncon(para, GradF ,iGradF, ObjF, ProxJ)
 %
-% Solves the problem
+% Uses SARAH to solve the problem
 %
 %    min_x   1/n sum_{i=1}^n f_i(x) + mu * J(x)
 %
