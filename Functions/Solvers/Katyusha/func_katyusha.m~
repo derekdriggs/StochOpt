@@ -1,11 +1,25 @@
 function [xk1, its, ek, fk, sk, tk, gk] = func_katyusha(para, GradF, iGradF, ObjF, ProxJ)
 %
+
+fprintf('performing Katyusha...\n');
+
+gamma  = para.gamma;
+tau1   = para.tau1;
+if tau1 > 1/2
+    error('tau1 is too large')
+end
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 % Uses Katyusha to solve the problem
 %
 %    min_x   1/n sum_{i=1}^n f_i(x) + mu * J(x)
 %
-% where f_i has a Lipschitz continuous gradient for all i and J is strongly
-% convex. If J is not strongly convex, use Katyusha_ns.
+% where f_i has a Lipschitz continuous gradient for all i.
 %
 % Inputs:
 %   para   - struct of parameters
@@ -29,10 +43,8 @@ function [xk1, its, ek, fk, sk, tk, gk] = func_katyusha(para, GradF, iGradF, Obj
 %     n          - length of vector x;
 %     mu         - non-negative tuning parameter ( n^(-1/2) );
 %     P          - epoch length (2*m);
-%     gamma      - step-size for mirror descent step (0.1);
-%     eta        - step-size for gradient descent step (0.1);
-%     tau1       - (Nesterov) momentum parameter (0.25);
-%     tau2       - (Katyusha) momentum parameter (0.5);
+%     c_gamma    - step-size times Lipschitz constant of f_i (0.1);
+%     beta_fi    - inverse of Lipschitz constant of f_i (1);
 %     maxits     - maximum number of iterations (1000);
 %     printEvery - number of iterations between printing (100);
 %     saveEvery  - number of iterations between saves (100);
@@ -57,8 +69,7 @@ mu      = setOpts(para,'mu',1/sqrt(m));
 P       = setOpts(para,'P',2*m);
 gamma   = setOpts(para,'gamma',0.1);
 eta     = setOpts(para,'eta',0.1);
-tau1    = setOpts(para,'tau1',0.25);
-tau2    = setOpts(para,'tau2',0.5);
+tau2    = setOp
 maxits  = setOpts(para,'maxits',1000);
 printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
@@ -70,11 +81,6 @@ x0         = setOpts(para,'x0',randn(n,1));
 
 % regulate batch size
 b          = min([b m]);
-
-% regulate momentum parameters
-if tau1 + tau2 > 1
-    error('tau1 + tau2 is too large')
-end
 
 % initialise iterate histories
 ek = zeros(floor(maxits/objEvery), 1);
@@ -113,21 +119,19 @@ while(its<maxits)
         
         xk1 = tau1*z + tau2*x_tilde + (1-tau1-tau2)*y;
         
-        j = randperm(m,b);
+        j = randperm(m,1);
         
-        for batch_num = 1:length(j)
-            Gj_k1(:,batch_num) = iGradF(x, j(batch_num));
-            Gj_k2(:,batch_num) = iGradF(x_tilde, j(batch_num));
-        end
+        Gj_k1 = iGradF(xk1, j);
+        Gj_k2 = iGradF(x_tilde, j);
         
         
         % Update y
-        w = xk1 - eta * mean( Gj_k1 - Gj_k2, 2 ) - eta * g_full;
+        w = xk1 - eta * ( Gj_k1 - Gj_k2 + g_full );
         y = ProxJ(w, mu*eta);
         
         
         % Update z
-        w = z - gamma * mean( Gj_k1 - Gj_k2, 2 ) - gamma * g_full;
+        w = z - gamma* ( Gj_k1 - Gj_k2 + g_full );
         z = ProxJ(w, gamma*mu);
        
         
