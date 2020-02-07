@@ -1,2 +1,2 @@
 # StochOpt
-A library of stochastic optimisation algorithms
+A library of stochastic optimisation algorithms.
