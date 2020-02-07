@@ -1,6 +1,6 @@
 function [x, t, ek, fk, sk, gk] = func_SVRG(para, GradF ,iGradF, ObjF, ProxJ)
 %
-% Solves the problem
+% Uses SVRG to solve the problem
 %
 %    min_x   1/n sum_{i=1}^n f_i(x) + mu * J(x)
 %
