@@ -59,7 +59,7 @@ gamma   = setOpts(para,'gamma',0.1);
 eta     = setOpts(para,'eta',0.1);
 tau1    = setOpts(para,'tau1',0.25);
 tau2    = setOpts(para,'tau2',0.5);
-maxits  = setOpts(para,'maxits',1000);
+maxits  = setOpts(para,'maxits',1e4);
 printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
@@ -173,6 +173,10 @@ while(its<maxits)
     
 end    
 fprintf('\n');
+
+if its == maxits
+    fprintf('\n Reached maximum number of allowed iterations... \n')
+end
 
 ek = ek(1:l);
 sk = sk(1:l);

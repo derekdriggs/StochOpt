@@ -55,7 +55,7 @@ end
 mu      = setOpts(para,'mu',1/sqrt(m));
 c_gamma = setOpts(para,'c_gamma',0.1);
 beta_fi = setOpts(para,'beta_fi',1);
-maxits  = setOpts(para,'maxits',1000);
+maxits  = setOpts(para,'maxits',1e4);
 printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
@@ -161,6 +161,10 @@ while(its<maxits)
     
 end
 fprintf('\n');
+
+if its == maxits
+    fprintf('\n Reached maximum number of allowed iterations... \n')
+end
 
 fk = fk(1:l);
 ek = ek(1:l);

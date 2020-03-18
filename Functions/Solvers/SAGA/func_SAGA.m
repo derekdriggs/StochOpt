@@ -53,7 +53,7 @@ end
 mu      = setOpts(para,'mu',1/sqrt(m));
 c_gamma = setOpts(para,'c_gamma',0.1);
 beta_fi = setOpts(para,'beta_fi',1);
-maxits  = setOpts(para,'maxits',1000);
+maxits  = setOpts(para,'maxits',1e4);
 printEvery = setOpts(para,'printEvery',100);
 saveEvery  = setOpts(para,'saveEvery',100);
 printObj   = setOpts(para,'printObj',1);
@@ -62,6 +62,7 @@ theta      = setOpts(para,'theta',1);
 b          = setOpts(para,'b',1);
 tol        = setOpts(para,'tol',1e-4);
 x0         = setOpts(para,'x0',randn(n,1));
+para.name  = setOpts(para,'name','test');
 
 % regulate batch size
 b          = min([b m]);
@@ -157,6 +158,9 @@ sk = sk(1:l);
 gk = gk(1:l);
 tk = tk(1:l);
 
+if its == maxits
+    fprintf('\n Reached maximum number of allowed iterations... \n')
+end
 
 % save(para.name,'gk','sk','ek','fk','x','tk','para')
 
