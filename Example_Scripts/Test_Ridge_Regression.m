@@ -1,3 +1,8 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This script compares SAGA, SVRG, SARAH, and SARGE on several ridge 
+% regression problems.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all
 close all
 clc
@@ -193,9 +198,6 @@ para.Obj      = 1;
 para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
-
-% para.c_gamma = choose_stepsize(para, 4e4, iGradF, ObjF, 'func_SAGA');
-
 para.c_gamma = 1/5;
 
 its_old = -1;
@@ -439,9 +441,7 @@ grid on;
 ax = gca;
 ax.GridLineStyle = '--';
 
-%axis([1, max(its1, its2)/m, 0 1.1*max(gk1(end), gk2(end))]);
 ylim([1e-15 1]);
-%xlim([0 300]);
 
 ylabel({'$F(x_k) - F(x^*)$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 xlabel({'\vspace{-0.0mm}';'$k/n$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');

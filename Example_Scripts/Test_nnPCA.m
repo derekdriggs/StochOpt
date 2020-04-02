@@ -1,3 +1,8 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This script compares SAGA, SVRG, SARAH, and SARGE on several 
+% non-negative PCA problems.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all
 close all
 clc
@@ -317,14 +322,9 @@ p4 = semilogy(fk_svrg(:,1) - exact, '--', 'LineWidth',linewidth);
 p5 = semilogy(fk_sarah - exact, 'b', 'LineWidth',linewidth);
 p6 = semilogy(fk_sarge - exact, '-m', 'LineWidth',linewidth);
 
-
 grid on;
 ax = gca;
 ax.GridLineStyle = '--';
-
-%axis([1, max(its1, its2)/m, 0 1.1*max(gk1(end), gk2(end))]);
-%ylim([1e-2 1]);
-%xlim([0 300]);
 
 ylabel({'$F(x_k) - F(x^*)$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 xlabel({'\vspace{-0.0mm}';'$k/n$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');

@@ -1,3 +1,8 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This script compares SAGA, SVRG, SARAH, and SARGE on several LASSO 
+% problems.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all
 close all
 clc
@@ -65,8 +70,6 @@ iGradFOpt = @(x, i) igrad_lasso_SAGA_Lin(x,i,W,y);
 
 ProxJ = @(x, t) sign(x).*max(abs(x) - t,0);
 
-%ObjF = @(x) para.mu*sum(abs(x(1:end-1))) + func_logistic(x, para.W, para.y);
-
 ObjF = @(x) func_lasso(x,para.W,para.y,para.mu);
 
 outputType = 'pdf';
@@ -88,8 +91,6 @@ if exist(para.name) ~= 2
     para.objEvery   = 100;
     para.saveEvery  = 1e4*m;
     para.printEvery = 100;
-
-    % para.c_gamma = choose_stepsize(para, 4e4, iGradF, ObjF, 'func_SAGA');
 
     para.c_gamma = 1/5;
 
@@ -121,8 +122,6 @@ para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
 
-% para.c_gamma = choose_stepsize(para, 4e4, iGradF, ObjF, 'func_SAGA');
-
 para.c_gamma = 1/5;
 
 its_old = -1;
@@ -143,14 +142,12 @@ for i = 1:length(theta_list)
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
                     x_saga(:,i)     = zeros(size(x_saga(:,i)));
-                    %its1_theta(1:length(its),i) = its;
                     ek_saga(:,i)   = zeros(size(ek_saga(:,i)));
                     fk_saga(:,i)   = zeros(size(fk_saga(:,i)));
                     sk_saga(:,i)   = zeros(size(sk_saga(:,i)));
                     gk_saga(:,i)   = zeros(size(gk_saga(:,i)));
 
                     x_saga(1:length(x),i)     = x;
-                    %its1_theta(1:length(its),i) = its;
                     ek_saga(1:length(ek),i)   = ek;
                     fk_saga(1:length(fk),i)   = fk;
                     sk_saga(1:length(sk),i)   = sk;
@@ -171,7 +168,6 @@ for i = 1:length(theta_list)
         para = para_old;
 
         x_saga(1:length(x),i)     = x;
-        %its1_theta(1:length(its),i) = its;
         ek_saga(1:length(ek),i)   = ek;
         fk_saga(1:length(fk),i)   = fk;
         sk_saga(1:length(sk),i)   = sk;
@@ -201,8 +197,6 @@ para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
 
-% para.c_gamma = choose_stepsize(para, 4e4, iGradF, ObjF, 'func_SAGA');
-
 para.c_gamma = 1/5;
 
 its_old = -1;
@@ -223,14 +217,12 @@ for i = 1:length(theta_list)
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
                     x_svrg(:,i)     = zeros(size(x_svrg(:,i)));
-                    %its1_theta(1:length(its),i) = its;
                     ek_svrg(:,i)   = zeros(size(ek_svrg(:,i)));
                     fk_svrg(:,i)   = zeros(size(fk_svrg(:,i)));
                     sk_svrg(:,i)   = zeros(size(sk_svrg(:,i)));
                     gk_svrg(:,i)   = zeros(size(gk_svrg(:,i)));
 
                     x_svrg(1:length(x),i)     = x;
-                    %its1_theta(1:length(its),i) = its;
                     ek_svrg(1:length(ek),i)   = ek;
                     fk_svrg(1:length(fk),i)   = fk;
                     sk_svrg(1:length(sk),i)   = sk;
@@ -251,7 +243,6 @@ for i = 1:length(theta_list)
         para = para_old;
 
         x_svrg(1:length(x),i)     = x;
-        %its1_theta(1:length(its),i) = its;
         ek_svrg(1:length(ek),i)   = ek;
         fk_svrg(1:length(fk),i)   = fk;
         sk_svrg(1:length(sk),i)   = sk;
@@ -300,7 +291,6 @@ while mult <= 100
         if its <= its_old
 
             x_sarah(:,i)     = zeros(size(x_sarah(:,i)));
-            %its1_theta(1:length(its),i) = its;
             ek_sarah(:,i)   = zeros(size(ek_sarah(:,i)));
             fk_sarah(:,i)   = zeros(size(fk_sarah(:,i)));
             sk_sarah(:,i)   = zeros(size(sk_sarah(:,i)));
@@ -309,7 +299,6 @@ while mult <= 100
             save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
 
             x_sarah    = x;
-            %its_sarah  = its;
             ek_sarah   = ek;
             fk_sarah   = fk;
             sk_sarah   = sk;
@@ -322,7 +311,6 @@ while mult <= 100
     else
 
         x_sarah    = x;
-        %its_sarah  = its;
         ek_sarah   = ek;
         fk_sarah   = fk;
         sk_sarah   = sk;
@@ -345,7 +333,6 @@ else
     para = para_old;
     
     x_sarah(1:length(x),i)     = x;
-    %its1_theta(1:length(its),i) = its;
     ek_sarah(1:length(ek),i)   = ek;
     fk_sarah(1:length(fk),i)   = fk;
     sk_sarah(1:length(sk),i)   = sk;
@@ -382,14 +369,12 @@ while mult <= 100
         if its <= its_old
 
             x_sarge(:,i)     = zeros(size(x_sarge(:,i)));
-            %its1_theta(1:length(its),i) = its;
             ek_sarge(:,i)   = zeros(size(ek_sarge(:,i)));
             fk_sarge(:,i)   = zeros(size(fk_sarge(:,i)));
             sk_sarge(:,i)   = zeros(size(sk_sarge(:,i)));
             gk_sarge(:,i)   = zeros(size(gk_sarge(:,i)));
 
             x_sarge    = x;
-            %its_sarge  = its;
             ek_sarge   = ek;
             fk_sarge   = fk;
             sk_sarge   = sk;
@@ -404,7 +389,6 @@ while mult <= 100
     else
 
         x_sarge    = x;
-        %its_sarge  = its;
         ek_sarge   = ek;
         fk_sarge   = fk;
         sk_sarge   = sk;
@@ -427,7 +411,6 @@ else
     para = para_old;
     
     x_sarge(1:length(x),i)     = x;
-    %its1_theta(1:length(its),i) = its;
     ek_sarge(1:length(ek),i)   = ek;
     fk_sarge(1:length(fk),i)   = fk;
     sk_sarge(1:length(sk),i)   = sk;
@@ -465,8 +448,6 @@ set(gcf,'papersize',output_size/resolution-[0.8 0.4]);
 p1 = semilogy(fk_saga(:,1) - exact, '-k', 'LineWidth',linewidth);
 hold on
 p2 = semilogy(fk_saga(:,2) - exact, '-', 'LineWidth',linewidth);
-% p3 = semilogy(x_svrg,fk_svrg - exact, 'r', 'LineWidth',linewidth);
-% p4 = semilogy(x_sarah,fk_sarah - exact, 'b', 'LineWidth',linewidth);
 p3 = semilogy(fk_svrg - exact, 'r', 'LineWidth',linewidth);
 p4 = semilogy(fk_sarah - exact, 'b', 'LineWidth',linewidth);
 p5 = semilogy(fk_sarge - exact, '-m', 'LineWidth',linewidth);
@@ -476,10 +457,7 @@ grid on;
 ax = gca;
 ax.GridLineStyle = '--';
 
-%axis([1, max(its1, its2)/m, 0 1.1*max(gk1(end), gk2(end))]);
 ylim([1e-15 1]);
-%xlim([0 300]);
-
 ylabel({'$F(x_k) - F(x^*)$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 xlabel({'\vspace{-0.0mm}';'$k/n$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 
