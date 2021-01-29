@@ -454,7 +454,7 @@ legend('boxoff');
 set(lg, 'Interpreter', 'latex');
 
 % uncomment to save figure
-% epsname = sprintf('%s/ridge_regression_comparison_%s_obj.%s', filename, filename, outputType);
+epsname = sprintf('%s/ridge_regression_comparison_%s_obj.%s', filename, filename, outputType);
 if strcmp(outputType, 'png')
     print(epsname, '-dpng');
 else
