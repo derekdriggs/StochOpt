@@ -164,7 +164,7 @@ sk = sk(1:l);
 gk = gk(1:l);
 tk = tk(1:l);
 
-% save(para.name,'gk','sk','ek','fk','tk','x','para')
+save(para.name,'gk','sk','ek','fk','tk','x','para')
 
 end
 

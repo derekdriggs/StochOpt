@@ -170,7 +170,7 @@ if its == maxits
 end
 
 
-% save(para.name,'gk','sk','ek','fk','x','tk','para')
+save(para.name,'gk','sk','ek','fk','x','tk','para')
 
 end
 

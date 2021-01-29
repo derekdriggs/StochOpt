@@ -135,10 +135,11 @@ for i = 1:length(theta_list)
     para.name    = [filename '/saga_ridge_best_step_' filename '_theta_' num2str(para.theta) '_obj.mat'];
    
     if exist(para.name) ~= 2
-    
+        % Find the best step size from the set 1/(mult*L), where mult is a
+        % natural number.
         while mult <= 100
 
-            para.c_gamma              = 1/mult;
+            para.c_gamma             = 1/mult;
             [x, its, ek, fk, sk, gk] = func_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
 
             if its_old < 0 || (its_old > 0 && its <= its_old)
@@ -452,7 +453,8 @@ set(lg,'FontSize', legendFontSize);
 legend('boxoff');
 set(lg, 'Interpreter', 'latex');
 
-epsname = sprintf('%s/ridge_regression_comparison_%s_obj.%s', filename, filename, outputType);
+% uncomment to save figure
+% epsname = sprintf('%s/ridge_regression_comparison_%s_obj.%s', filename, filename, outputType);
 if strcmp(outputType, 'png')
     print(epsname, '-dpng');
 else

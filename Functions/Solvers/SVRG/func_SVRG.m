@@ -170,7 +170,7 @@ ek = ek(1:l);
 sk = sk(1:l);
 gk = gk(1:l);
 
-% save(para.name,'gk','sk','ek','fk','x','tk','para')
+save(para.name,'gk','sk','ek','fk','x','tk','para')
 
 end
 

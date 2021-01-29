@@ -100,7 +100,7 @@ if exist(para.name) ~= 2
        
     para.tol = 1e-11;
     
-    save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
+    save(para.name,'gk','sk','ek','fk','x','para')
     
 end
 
@@ -122,37 +122,34 @@ para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
 
-para.c_gamma = 1/5;
-
 its_old = -1;
 mult    = 5;
 
 for i = 1:length(theta_list)
     
-    para.c_gamma = 1/mult;
     para.theta   = theta_list(i);
     para.name    = [filename '/saga_lasso_best_step_' filename '_theta_' num2str(para.theta) '_obj.mat'];
    
     if exist(para.name) ~= 2
-    
+        % Find the best step size from the set 1/(mult*L), where mult is a
+        % natural number.
         while mult <= 100
 
+            para.c_gamma             = 1/mult;
             [x, its, ek, fk, sk, gk] = func_SAGA_Lin(para, iGradFOpt, ObjF, ProxJ);
 
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
-                    x_saga(:,i)     = zeros(size(x_saga(:,i)));
-                    ek_saga(:,i)   = zeros(size(ek_saga(:,i)));
-                    fk_saga(:,i)   = zeros(size(fk_saga(:,i)));
-                    sk_saga(:,i)   = zeros(size(sk_saga(:,i)));
-                    gk_saga(:,i)   = zeros(size(gk_saga(:,i)));
-
                     x_saga(1:length(x),i)     = x;
+                    its_saga(1:length(its),i) = its;
                     ek_saga(1:length(ek),i)   = ek;
                     fk_saga(1:length(fk),i)   = fk;
                     sk_saga(1:length(sk),i)   = sk;
                     gk_saga(1:length(gk),i)   = gk;
                     stepsize_times_L(i)       = 1/mult;
+                    
+                    its_old                   = its;
+                    mult                      = mult+1;
 
             else
                 mult    = 5;
@@ -168,6 +165,7 @@ for i = 1:length(theta_list)
         para = para_old;
 
         x_saga(1:length(x),i)     = x;
+        its_saga(1:length(its),i) = its;
         ek_saga(1:length(ek),i)   = ek;
         fk_saga(1:length(fk),i)   = fk;
         sk_saga(1:length(sk),i)   = sk;
@@ -189,14 +187,13 @@ fprintf('\n');
 epoch_svrg = 2*m;
 para.P     = epoch_svrg;
 
-theta_list = [1];
+theta_list = [1 1.2];
 
 para.Obj      = 1;
 
 para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
-
 para.c_gamma = 1/5;
 
 its_old = -1;
@@ -211,23 +208,22 @@ for i = 1:length(theta_list)
     if exist(para.name) ~= 2
     
         while mult <= 100
-
+            
+            para.c_gamma              = 1/mult;
             [x, its, ek, fk, sk, gk] = func_SVRG(para, GradF, iGradF, ObjF, ProxJ);
 
             if its_old < 0 || (its_old > 0 && its <= its_old)
 
-                    x_svrg(:,i)     = zeros(size(x_svrg(:,i)));
-                    ek_svrg(:,i)   = zeros(size(ek_svrg(:,i)));
-                    fk_svrg(:,i)   = zeros(size(fk_svrg(:,i)));
-                    sk_svrg(:,i)   = zeros(size(sk_svrg(:,i)));
-                    gk_svrg(:,i)   = zeros(size(gk_svrg(:,i)));
-
                     x_svrg(1:length(x),i)     = x;
+                    its_svrg(1:length(its),i) = its;
                     ek_svrg(1:length(ek),i)   = ek;
                     fk_svrg(1:length(fk),i)   = fk;
                     sk_svrg(1:length(sk),i)   = sk;
                     gk_svrg(1:length(gk),i)   = gk;
                     stepsize_times_L(i)       = 1/mult;
+                    
+                    its_old                   = its;
+                    mult                      = mult+1;
 
             else
                 mult    = 5;
@@ -243,6 +239,7 @@ for i = 1:length(theta_list)
         para = para_old;
 
         x_svrg(1:length(x),i)     = x;
+        its_svrg(1:length(its),i) = its;
         ek_svrg(1:length(ek),i)   = ek;
         fk_svrg(1:length(fk),i)   = fk;
         sk_svrg(1:length(sk),i)   = sk;
@@ -261,19 +258,16 @@ fprintf('\n');
 %% SARAH
 
 epoch_sarah = 2*m;
-para.P     = epoch_sarah;
+para.q     = 1/epoch_sarah;
 
 
 para.Obj      = 1;
-para.tol      = 1e-15;
+para.tol      = 1e-14;
 
 para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
 
-para.tol = 1e-17;
-
-para.c_gamma = 1/5;
 mult         = 5;
 its_old      = -1;
 
@@ -283,22 +277,15 @@ para.name       = [filename '/sarah_lasso_best_step_' filename '_obj.mat'];
 if exist(para.name) ~= 2
 
 while mult <= 100
+    
     para.c_gamma = 1/mult;
-
-    [x, its, ek, fk, sk, gk] = func_SARAH(para, GradF, iGradF, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_rSARAH(para, GradF, iGradF, ObjF, ProxJ);
 
     if its_old > 0
         if its <= its_old
 
-            x_sarah(:,i)     = zeros(size(x_sarah(:,i)));
-            ek_sarah(:,i)   = zeros(size(ek_sarah(:,i)));
-            fk_sarah(:,i)   = zeros(size(fk_sarah(:,i)));
-            sk_sarah(:,i)   = zeros(size(sk_sarah(:,i)));
-            gk_sarah(:,i)   = zeros(size(gk_sarah(:,i)));
-            
-            save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
-
             x_sarah    = x;
+            its_sarah  = its;
             ek_sarah   = ek;
             fk_sarah   = fk;
             sk_sarah   = sk;
@@ -311,13 +298,12 @@ while mult <= 100
     else
 
         x_sarah    = x;
+        its_sarah  = its;
         ek_sarah   = ek;
         fk_sarah   = fk;
         sk_sarah   = sk;
         gk_sarah   = gk;
         stepsize_times_L(i) = 1/mult;
-        
-        save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
 
     end
 
@@ -332,11 +318,11 @@ else
     load(para.name)
     para = para_old;
     
-    x_sarah(1:length(x),i)     = x;
-    ek_sarah(1:length(ek),i)   = ek;
-    fk_sarah(1:length(fk),i)   = fk;
-    sk_sarah(1:length(sk),i)   = sk;
-    gk_sarah(1:length(gk),i)   = gk;
+    x_sarah(1:length(x),1)     = x;
+    ek_sarah(1:length(ek),1)   = ek;
+    fk_sarah(1:length(fk),1)   = fk;
+    sk_sarah(1:length(sk),1)   = sk;
+    gk_sarah(1:length(gk),1)   = gk;
 end
 
 fprintf('\n');
@@ -351,8 +337,6 @@ para.objEvery   = m;
 para.saveEvery  = 1e3*m;
 para.printEvery = m;
 
-para.c_gamma = 1/5;
-
 mult         = 5;
 its_old      = -1;
 
@@ -363,25 +347,18 @@ if exist(para.name) ~= 2
 while mult <= 100
     para.c_gamma = 1/mult;
 
-    [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradF, ObjF, ProxJ);
+    [x, its, ek, fk, sk, gk] = func_SARGE_Lin(para, iGradFOpt, ObjF, ProxJ);
 
     if its_old > 0
         if its <= its_old
 
-            x_sarge(:,i)     = zeros(size(x_sarge(:,i)));
-            ek_sarge(:,i)   = zeros(size(ek_sarge(:,i)));
-            fk_sarge(:,i)   = zeros(size(fk_sarge(:,i)));
-            sk_sarge(:,i)   = zeros(size(sk_sarge(:,i)));
-            gk_sarge(:,i)   = zeros(size(gk_sarge(:,i)));
-
             x_sarge    = x;
+            its_sarge  = its;
             ek_sarge   = ek;
             fk_sarge   = fk;
             sk_sarge   = sk;
             gk_sarge   = gk;
             stepsize_times_L(i) = 1/mult;
-            
-            save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
 
         else
             break
@@ -389,13 +366,12 @@ while mult <= 100
     else
 
         x_sarge    = x;
+        its_sarge  = its;
         ek_sarge   = ek;
         fk_sarge   = fk;
         sk_sarge   = sk;
         gk_sarge   = gk;
         stepsize_times_L(i) = 1/mult;
-        
-        save(para.name,'gk','sk','ek','fk','x','stepsize_times_L','para')
 
     end
 
@@ -410,11 +386,12 @@ else
     load(para.name)
     para = para_old;
     
-    x_sarge(1:length(x),i)     = x;
-    ek_sarge(1:length(ek),i)   = ek;
-    fk_sarge(1:length(fk),i)   = fk;
-    sk_sarge(1:length(sk),i)   = sk;
-    gk_sarge(1:length(gk),i)   = gk;
+    x_sarge(1:length(x),1)     = x;
+    its_sarge(1:length(its),1) = its;
+    ek_sarge(1:length(ek),1)   = ek;
+    fk_sarge(1:length(fk),1)   = fk;
+    sk_sarge(1:length(sk),1)   = sk;
+    gk_sarge(1:length(gk),1)   = gk;
 end
 
 
@@ -434,7 +411,7 @@ x_sarah = 1:(2+epoch_sarah/m):length(fk_sarah)*(2+epoch_sarah/m);
 linewidth = 1.5;
 
 axesFontSize = 8;
-labelFontSize = 10;
+labelFontSize = 8;
 legendFontSize = 10;
 
 resolution = 300; % output resolution
@@ -448,8 +425,8 @@ set(gcf,'papersize',output_size/resolution-[0.8 0.4]);
 p1 = semilogy(fk_saga(:,1) - exact, '-k', 'LineWidth',linewidth);
 hold on
 p2 = semilogy(fk_saga(:,2) - exact, '-', 'LineWidth',linewidth);
-p3 = semilogy(fk_svrg - exact, 'r', 'LineWidth',linewidth);
-p4 = semilogy(fk_sarah - exact, 'b', 'LineWidth',linewidth);
+p3 = semilogy(fk_svrg(:,1) - exact, '-r', 'LineWidth',linewidth);
+p4 = semilogy(fk_sarah - exact, '-b', 'LineWidth',linewidth);
 p5 = semilogy(fk_sarge - exact, '-m', 'LineWidth',linewidth);
 
 
@@ -458,16 +435,18 @@ ax = gca;
 ax.GridLineStyle = '--';
 
 ylim([1e-15 1]);
+
 ylabel({'$F(x_k) - F(x^*)$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 xlabel({'\vspace{-0.0mm}';'$k/n$'}, 'FontSize', labelFontSize, 'FontAngle', 'normal', 'Interpreter', 'latex');
 
 lg = legend([p1, p2, p3, p4, p5],'SAGA','B-SAGA, $\theta = 10$','SVRG','SARAH','SARGE');
 set(lg,'Location', 'Best');
-set(lg,'FontSize', 10);
+set(lg,'FontSize', legendFontSize);
 legend('boxoff');
 set(lg, 'Interpreter', 'latex');
 
-epsname = sprintf('%s/NEW_PLOTS_sarah_lasso_best_step_%s_obj.%s', filename, filename, outputType);
+% save figure
+epsname = sprintf('%s/lasso_comparison_%s_obj.%s', filename, filename, outputType);
 if strcmp(outputType, 'png')
     print(epsname, '-dpng');
 else

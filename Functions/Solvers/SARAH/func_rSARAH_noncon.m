@@ -169,13 +169,13 @@ if its == maxits
 end
 
 fk = fk(1:l);
-mean_fk = (1:l);
+mean_fk = mean_fk(1:l);
 ek = ek(1:l);
 sk = sk(1:l);
 gk = gk(1:l);
 tk = tk(1:l);
 
-% save(para.name,'gk','sk','ek','fk','mean_fk','tk','x','para')
+save(para.name,'gk','sk','ek','fk','mean_fk','tk','x','para')
 
 end
 
